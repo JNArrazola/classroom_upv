@@ -15,8 +15,9 @@ const Login = () => {
     try {
       const res = await axios.post('http://localhost:3001/api/auth/login', { correo, contrasena });
       const token = res.data.token;
-      const payload = JSON.parse(atob(token.split('.')[1])); 
+      const payload = JSON.parse(atob(token.split('.')[1])); // Decodificar payload del JWT
 
+      // Guardar token y datos en el contexto
       login({ token, ...payload });
 
       if (payload.rol === 'maestro') {

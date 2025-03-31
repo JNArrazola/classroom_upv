@@ -90,4 +90,57 @@ const obtenerAlumnosDeClase = (req, res) => {
   };
   
 
-module.exports = { crearClase, agregarAlumnoAClase, obtenerClasesDelMaestro, obtenerAlumnosDeClase };
+const eliminarAlumno = (req, res) => {
+  const idClase = parseInt(req.params.idClase);
+  const idAlumno = parseInt(req.params.idAlumno);
+
+  const query = `
+    DELETE FROM clase_alumnos 
+    WHERE id_clase = ? AND id_alumno = ?
+  `;
+
+  db.query(query, [idClase, idAlumno], (err, result) => {
+    if (err) {
+      console.error('Error al eliminar alumno de la clase:', err);
+      return res.status(500).json({ mensaje: 'Error al eliminar alumno de la clase' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ mensaje: 'Alumno no estaba inscrito en esta clase' });
+    }
+
+    res.json({ mensaje: 'Alumno eliminado correctamente' });
+  });
+};
+  
+
+const getDetalleClase = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [[clase]] = await db.query(`
+      SELECT c.id, c.nombre, c.grupo, c.cuatrimestre, ca.nombre AS carrera, u.nombre AS maestro
+      FROM clases c
+      JOIN carreras ca ON ca.id = c.carrera_id
+      JOIN usuarios u ON u.id = c.maestro_id
+      WHERE c.id = ?
+    `, [id]);
+
+    const [alumnos] = await db.query(`
+      SELECT u.id, u.nombre
+      FROM clase_alumnos ca
+      JOIN usuarios u ON u.id = ca.alumno_id
+      WHERE ca.clase_id = ?
+    `, [id]);
+
+    clase.maestro = { nombre: clase.maestro };
+    clase.alumnos = alumnos;
+
+    res.json(clase);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'Error al obtener el detalle de la clase' });
+  }
+};
+
+
+module.exports = { crearClase, agregarAlumnoAClase, obtenerClasesDelMaestro, obtenerAlumnosDeClase, eliminarAlumno, getDetalleClase };

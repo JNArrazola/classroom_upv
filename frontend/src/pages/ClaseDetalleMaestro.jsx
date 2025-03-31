@@ -46,6 +46,21 @@ const ClaseDetalleMaestro = () => {
     }
   };
 
+  const eliminarAlumno = async (idAlumno) => {
+    if (!window.confirm('¿Seguro que quieres eliminar a este alumno de la clase?')) return;
+  
+    try {
+      await axios.delete(`http://localhost:3001/api/clases/${id}/alumnos/${idAlumno}`, {
+        headers: { Authorization: `Bearer ${usuario.token}` }
+      });
+      cargarAlumnos();
+    } catch (err) {
+      console.error('Error al eliminar alumno:', err);
+      alert('No se pudo eliminar el alumno.');
+    }
+  };
+  
+
   const handleBuscar = async (e) => {
     e.preventDefault();
     try {
@@ -174,12 +189,12 @@ const ClaseDetalleMaestro = () => {
                 onChange={(e) => setNuevoAviso(e.target.value)}
                 placeholder="Escribe un aviso para tus alumnos"
               ></textarea>
-              <input
-                type="file"
-                multiple
-                onChange={(e) => setAdjuntos(e.target.files)}
-                accept=".pdf,image/*"
-              />
+                <input
+                  type="file"
+                  multiple
+                  onChange = {(e) => setAdjuntos(Array.from(e.target.files))}
+                  accept=".pdf,image/*"
+                />
               <button type="submit">Publicar aviso</button>
             </form>
           )}
@@ -218,19 +233,30 @@ const ClaseDetalleMaestro = () => {
                   <p>{aviso.texto}</p>
                 )}
                 {aviso.archivos && aviso.archivos.length > 0 && (
-                  <ul>
-                    {aviso.archivos.map((archivo, index) => (
-                      <li key={index}>
-                        <a
-                          href={`http://localhost:3001/storage/${archivo}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Ver archivo {index + 1}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="adjuntos-grid">
+                    {aviso.archivos.map((archivo, index) => {
+                      const isImage = archivo.match(/\.(jpg|jpeg|png|gif)$/i);
+                      const isPDF = archivo.match(/\.pdf$/i);
+                      return (
+                        <div key={index} className="adjunto-card">
+                          {isImage ? (
+                            <img src={`http://localhost:3001/storage/${archivo}`} alt={`Archivo ${index}`} />
+                          ) : isPDF ? (
+                            <embed src={`http://localhost:3001/storage/${archivo}`} type="application/pdf" />
+                          ) : (
+                            <p>Archivo {index + 1}</p>
+                          )}
+                          <a
+                            href={`http://localhost:3001/storage/${archivo}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Ver archivo
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </li>
             ))}
@@ -262,9 +288,12 @@ const ClaseDetalleMaestro = () => {
 
           <h4>Alumnos registrados en la clase</h4>
           <ul>
-            {alumnos.map((alumno) => (
+          {alumnos.map((alumno) => (
               <li key={alumno.id}>
                 {alumno.nombre} - {alumno.matricula} - {alumno.correo}
+                <button onClick={() => eliminarAlumno(alumno.id)} style={{ marginLeft: '1rem' }}>
+                  🗑
+                </button>
               </li>
             ))}
           </ul>

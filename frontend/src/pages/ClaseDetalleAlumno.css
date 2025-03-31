@@ -1,0 +1,76 @@
+.clase-detalle-alumno {
+    padding: 20px;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  .titulo-clase {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  
+  .contenido-clase {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+  }
+  
+  .avisos {
+    flex: 2;
+  }
+  
+  .aviso {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    background-color: #f9f9f9;
+  }
+  
+  .aviso-titulo {
+    font-weight: bold;
+    font-size: 18px;
+  }
+  
+  .aviso-contenido {
+    margin: 8px 0;
+  }
+  
+  .archivos ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .archivos li {
+    margin: 4px 0;
+  }
+  
+  .participantes {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .viñeta {
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 12px;
+    background-color: #eef2f5;
+  }
+  
+  .viñeta h4 {
+    margin-top: 0;
+  }
+  
+  .viñeta.alumnos ul {
+    list-style: square;
+    margin-left: 20px;
+    padding: 0;
+  }
+  
+  .cargando {
+    padding: 20px;
+    font-size: 18px;
+  }
+  
