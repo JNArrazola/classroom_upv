@@ -232,32 +232,40 @@ const ClaseDetalleMaestro = () => {
                 ) : (
                   <p>{aviso.texto}</p>
                 )}
-                {aviso.archivos && aviso.archivos.length > 0 && (
-                  <div className="adjuntos-grid">
-                    {aviso.archivos.map((archivo, index) => {
-                      const isImage = archivo.match(/\.(jpg|jpeg|png|gif)$/i);
-                      const isPDF = archivo.match(/\.pdf$/i);
-                      return (
-                        <div key={index} className="adjunto-card">
-                          {isImage ? (
-                            <img src={`http://localhost:3001/storage/${archivo}`} alt={`Archivo ${index}`} />
-                          ) : isPDF ? (
-                            <embed src={`http://localhost:3001/storage/${archivo}`} type="application/pdf" />
-                          ) : (
-                            <p>Archivo {index + 1}</p>
-                          )}
-                          <a
-                            href={`http://localhost:3001/storage/${archivo}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            Ver archivo
-                          </a>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+{aviso.archivos && aviso.archivos.length > 0 && (
+  <div className="adjuntos-grid">
+    {aviso.archivos.map((archivo, index) => {
+      const isImage = archivo.match(/\.(jpg|jpeg|png|gif|png)$/i);
+      const isPDF = archivo.match(/\.pdf$/i);
+      return (
+        <div key={index} className="adjunto-card">
+          {isImage ? (
+            <img
+              src={`http://localhost:3001/storage/${archivo}`}
+              alt={`Archivo ${index}`}
+              className="imagen-miniatura"
+            />
+          ) : isPDF ? (
+            <iframe
+              src={`http://localhost:3001/storage/${archivo}#toolbar=0&navpanes=0&scrollbar=0&page=1`}
+              type="application/pdf"
+              className="pdf-miniatura"
+            ></iframe>
+          ) : (
+            <p>Archivo {index + 1}</p>
+          )}
+          <a
+            href={`http://localhost:3001/storage/${archivo}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Ver archivo
+          </a>
+        </div>
+      );
+    })}
+  </div>
+)}
               </li>
             ))}
           </ul>

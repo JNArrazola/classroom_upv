@@ -4,6 +4,13 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const avisosController = require('../controllers/avisosController');
+const verificarToken = require('../middlewares/authMiddleware'); 
+const { getAvisosPorClaseAlumno } = require('../controllers/avisosController');
+
+router.delete('/:id', avisosController.eliminarAviso);
+router.put('/:id', avisosController.editarAviso);
+router.get('/clase/:id/alumno', getAvisosPorClaseAlumno);
+router.get('/clase/:id', avisosController.getAvisosPorClase);
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -17,13 +24,9 @@ const storage = multer.diskStorage({
     }
 });
 
-
-
 const upload = multer({ storage });
 
-router.delete('/:id', avisosController.eliminarAviso);
-router.put('/:id', avisosController.editarAviso);
-router.get('/clase/:id', avisosController.getAvisosPorClase);
+router.post('/', verificarToken, upload.array('archivos'), avisosController.crearAviso);
 router.post('/', upload.array('archivos'), avisosController.crearAviso);
 
 module.exports = router;

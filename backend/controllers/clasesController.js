@@ -114,18 +114,63 @@ const eliminarAlumno = (req, res) => {
 };
   
 
-const getDetalleClase = async (req, res) => {
+const getDetalleClase = (req, res) => {
   const { id } = req.params;
+
+  const queryClase = `
+    SELECT c.id, c.nombre, c.codigo_grupo, c.cuatrimestre, ca.nombre AS carrera, u.nombre AS maestro
+    FROM clases c
+    JOIN carreras ca ON ca.id = c.id_carrera
+    JOIN usuarios u ON u.id = c.id_maestro
+    WHERE c.id = ?
+  `;
+
+  db.query(queryClase, [id], (err, claseResult) => {
+    if (err) {
+      console.error('Error al obtener clase:', err);
+      return res.status(500).json({ mensaje: 'Error al obtener el detalle de la clase' });
+    }
+
+    if (claseResult.length === 0) {
+      return res.status(404).json({ mensaje: 'Clase no encontrada' });
+    }
+
+    const clase = claseResult[0];
+
+    const queryAlumnos = `
+      SELECT u.id, u.nombre
+      FROM clase_alumnos ca
+      JOIN usuarios u ON u.id = ca.id_alumno
+      WHERE ca.id_clase = ?
+    `;
+
+    db.query(queryAlumnos, [id], (err2, alumnosResult) => {
+      if (err2) {
+        console.error('Error al obtener alumnos:', err2);
+        return res.status(500).json({ mensaje: 'Error al obtener alumnos de la clase' });
+      }
+
+      clase.maestro = { nombre: clase.maestro };
+      clase.alumnos = alumnosResult;
+      res.json(clase);
+    });
+  });
+};
+
+
+const getDetalleClaseAlumno = async (req, res) => {
+  const { id } = req.params;
+
   try {
     const [[clase]] = await db.query(`
-      SELECT c.id, c.nombre, c.grupo, c.cuatrimestre, ca.nombre AS carrera, u.nombre AS maestro
+      SELECT c.id, c.nombre, c.codigo_grupo, c.cuatrimestre, ca.nombre AS carrera, u.nombre AS maestro
       FROM clases c
       JOIN carreras ca ON ca.id = c.carrera_id
       JOIN usuarios u ON u.id = c.maestro_id
       WHERE c.id = ?
     `, [id]);
 
-    const [alumnos] = await db.query(`
+    const [alumnos] = await db.promise().query(`
       SELECT u.id, u.nombre
       FROM clase_alumnos ca
       JOIN usuarios u ON u.id = ca.alumno_id
@@ -136,11 +181,11 @@ const getDetalleClase = async (req, res) => {
     clase.alumnos = alumnos;
 
     res.json(clase);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensaje: 'Error al obtener el detalle de la clase' });
+  } catch (err) {
+    console.error('Error al obtener clase para alumno:', err);
+    res.status(500).json({ mensaje: 'Error al obtener clase para alumno' });
   }
-};
+};  
 
 
-module.exports = { crearClase, agregarAlumnoAClase, obtenerClasesDelMaestro, obtenerAlumnosDeClase, eliminarAlumno, getDetalleClase };
+module.exports = { crearClase, agregarAlumnoAClase, obtenerClasesDelMaestro, obtenerAlumnosDeClase, eliminarAlumno, getDetalleClase, getDetalleClaseAlumno};
