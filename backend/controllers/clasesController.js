@@ -73,5 +73,21 @@ const obtenerClasesDelMaestro = (req, res) => {
   });
 };
 
+const obtenerAlumnosDeClase = (req, res) => {
+    const { idClase } = req.params;
+  
+    const query = `
+      SELECT u.id, u.nombre, u.correo, u.matricula
+      FROM clase_alumnos ca
+      INNER JOIN usuarios u ON ca.id_alumno = u.id
+      WHERE ca.id_clase = ?
+    `;
+  
+    db.query(query, [idClase], (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Error al obtener alumnos' });
+      res.json(rows);
+    });
+  };
+  
 
-module.exports = { crearClase, agregarAlumnoAClase, obtenerClasesDelMaestro};
+module.exports = { crearClase, agregarAlumnoAClase, obtenerClasesDelMaestro, obtenerAlumnosDeClase };

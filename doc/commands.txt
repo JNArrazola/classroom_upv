@@ -1,1 +1,1 @@
-npm install jsonwebtoken bcryptjs cors express mysql2
+npm install jsonwebtoken bcryptjs cors express mysql2 multer path
