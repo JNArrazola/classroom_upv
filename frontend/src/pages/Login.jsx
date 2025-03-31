@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import './Login.css'; 
 
 const Login = () => {
   const [correo, setCorreo] = useState('');
@@ -15,9 +16,8 @@ const Login = () => {
     try {
       const res = await axios.post('http://localhost:3001/api/auth/login', { correo, contrasena });
       const token = res.data.token;
-      const payload = JSON.parse(atob(token.split('.')[1])); // Decodificar payload del JWT
+      const payload = JSON.parse(atob(token.split('.')[1])); 
 
-      // Guardar token y datos en el contexto
       login({ token, ...payload });
 
       if (payload.rol === 'maestro') {
@@ -31,7 +31,7 @@ const Login = () => {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: '0 auto', paddingTop: '4rem' }}>
+    <div className="login-container">
       <h2>Iniciar sesión</h2>
       <form onSubmit={handleSubmit}>
         <input
@@ -40,17 +40,17 @@ const Login = () => {
           value={correo}
           onChange={(e) => setCorreo(e.target.value)}
           required
-        /><br /><br />
+        />
         <input
           type="password"
           placeholder="Contraseña"
           value={contrasena}
           onChange={(e) => setContrasena(e.target.value)}
           required
-        /><br /><br />
+        />
         <button type="submit">Entrar</button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p>{error}</p>}
     </div>
   );
 };

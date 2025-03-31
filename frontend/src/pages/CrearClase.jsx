@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import './CrearClase.css';
 
 const CrearClase = () => {
   const { usuario } = useAuth();
@@ -63,9 +64,9 @@ const CrearClase = () => {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto' }}>
+    <div className="crear-clase-container">
       <h2>Crear nueva clase</h2>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="crear-clase-form">
         <input
           type="text"
           name="nombre"
@@ -73,15 +74,15 @@ const CrearClase = () => {
           value={form.nombre}
           onChange={handleChange}
           required
-        /><br /><br />
-
+        />
+  
         <textarea
           name="descripcion"
           placeholder="Descripción"
           value={form.descripcion}
           onChange={handleChange}
-        ></textarea><br /><br />
-
+        ></textarea>
+  
         <input
           type="text"
           name="codigo_grupo"
@@ -89,8 +90,8 @@ const CrearClase = () => {
           value={form.codigo_grupo}
           onChange={handleChange}
           required
-        /><br /><br />
-
+        />
+  
         <input
           type="number"
           name="cuatrimestre"
@@ -98,8 +99,8 @@ const CrearClase = () => {
           value={form.cuatrimestre}
           onChange={handleChange}
           required
-        /><br /><br />
-
+        />
+  
         <select
           name="id_carrera"
           value={form.id_carrera}
@@ -110,14 +111,14 @@ const CrearClase = () => {
           {carreras.map(c => (
             <option key={c.id} value={c.id}>{c.nombre}</option>
           ))}
-        </select><br /><br />
-
+        </select>
+  
         <button type="submit">Crear clase</button>
       </form>
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+  
+      {error && <p className="error-text">{error}</p>}
     </div>
-  );
+  );  
 };
 
 export default CrearClase;

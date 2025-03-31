@@ -8,10 +8,12 @@ const carrerasRoutes = require('./routes/carreras');
 const avisosRoutes = require('./routes/avisos');
 const path = require('path');
 const alumnoRoutes = require('./routes/alumno');
+const usuariosRoutes = require('./routes/usuarios');
 
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/usuarios', usuariosRoutes); 
 app.use('/api/avisos', avisosRoutes);
 app.use('/api/clases', clasesRoutes);
 app.use('/api/auth', authRoutes);
