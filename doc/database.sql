@@ -64,3 +64,5 @@ CREATE TABLE archivos_avisos (
     tipo_archivo ENUM('imagen', 'pdf') NOT NULL,
     FOREIGN KEY (id_aviso) REFERENCES avisos(id) ON DELETE CASCADE
 );
+
+INSERT INTO carreras (nombre) VALUES ("ITI"), ("IM"), ("IM"), ("LAYGE"), ("ISA")

@@ -56,4 +56,22 @@ const agregarAlumnoAClase = (req, res) => {
     });
 };
 
-module.exports = { crearClase, agregarAlumnoAClase };
+const obtenerClasesDelMaestro = (req, res) => {
+  const { idMaestro } = req.params;
+
+  const query = `
+    SELECT c.id, c.nombre, c.codigo_grupo, c.cuatrimestre, ca.nombre AS carrera
+    FROM clases c
+    INNER JOIN carreras ca ON c.id_carrera = ca.id
+    WHERE c.id_maestro = ?
+    ORDER BY c.creado_en DESC
+  `;
+
+  db.query(query, [idMaestro], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Error al obtener clases' });
+    res.json(rows);
+  });
+};
+
+
+module.exports = { crearClase, agregarAlumnoAClase, obtenerClasesDelMaestro};

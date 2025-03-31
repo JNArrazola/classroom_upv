@@ -7,3 +7,6 @@ router.post('/', crearClase);
 router.post('/:idClase/alumnos', agregarAlumnoAClase);
 
 module.exports = router;
+
+const { obtenerClasesDelMaestro } = require('../controllers/clasesController');
+router.get('/maestro/:idMaestro', obtenerClasesDelMaestro);
