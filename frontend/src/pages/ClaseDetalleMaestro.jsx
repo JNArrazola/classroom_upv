@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import './ClaseDetalleMaestro.css';
+import TrabajoEnClaseMaestro from './TrabajoEnClaseMaestro';
 
 const ClaseDetalleMaestro = () => {
   const { id } = useParams();
@@ -172,6 +173,7 @@ const ClaseDetalleMaestro = () => {
 
       <div className="clase-tabs">
         <button onClick={() => setSeccion('avisos')}>📢 Avisos / Tareas</button>
+        <button onClick={() => setSeccion('trabajo')}>📚 Trabajo en Clase</button>
         <button onClick={() => setSeccion('alumnos')}>👥 Alumnos</button>
       </div>
 
@@ -357,8 +359,14 @@ const ClaseDetalleMaestro = () => {
           </ul>
         </div>
       )}
+      {seccion === 'trabajo' && (
+      <TrabajoEnClaseMaestro idClase={id} />
+    )}
+
     </div>
   );
+
+  
 };
 
 export default ClaseDetalleMaestro;

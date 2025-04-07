@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import axios from 'axios';
+import { useState } from "react";
+import axios from "axios";
 
 const CrearMaterial = ({ idClase, temas, token, onMaterialCreado }) => {
-  const [texto, setTexto] = useState('');
+  const [texto, setTexto] = useState("");
   const [archivos, setArchivos] = useState([]);
   const [temasSeleccionados, setTemasSeleccionados] = useState([]);
 
@@ -10,26 +10,26 @@ const CrearMaterial = ({ idClase, temas, token, onMaterialCreado }) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append('id_clase', idClase);
-    formData.append('texto', texto);
-    temasSeleccionados.forEach(t => formData.append('temas[]', t));
-    archivos.forEach(file => formData.append('archivos', file));
+    formData.append("id_clase", idClase);
+    formData.append("texto", texto);
+    temasSeleccionados.forEach((t) => formData.append("temas[]", t));
+    archivos.forEach((file) => formData.append("archivos", file));
 
     try {
-      await axios.post('http://localhost:3001/api/avisos/material', formData, {
+      await axios.post("http://localhost:3001/api/avisos/material", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
-      alert('Material publicado correctamente');
-      setTexto('');
+      alert("Material publicado correctamente");
+      setTexto("");
       setArchivos([]);
       setTemasSeleccionados([]);
       onMaterialCreado(); // refrescar lista
     } catch (err) {
-      console.error('Error al crear material:', err);
-      alert('No se pudo crear el material');
+      console.error("Error al crear material:", err);
+      alert("No se pudo crear el material");
     }
   };
 
@@ -49,11 +49,19 @@ const CrearMaterial = ({ idClase, temas, token, onMaterialCreado }) => {
       />
       <div>
         <label>Temas:</label>
-        <select multiple value={temasSeleccionados} onChange={(e) =>
-          setTemasSeleccionados(Array.from(e.target.selectedOptions, option => option.value))
-        }>
-          {temas.map(t => (
-            <option key={t.id} value={t.id}>{t.nombre}</option>
+        <select
+          multiple
+          value={temasSeleccionados}
+          onChange={(e) =>
+            setTemasSeleccionados(
+              Array.from(e.target.selectedOptions, (option) => option.value)
+            )
+          }
+        >
+          {temas.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.nombre}
+            </option>
           ))}
         </select>
       </div>

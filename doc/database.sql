@@ -84,6 +84,7 @@ CREATE TABLE entregas (
 );
 
 ALTER TABLE avisos ADD COLUMN valor_maximo INT DEFAULT 100;
+ALTER TABLE avisos ADD COLUMN es_material BOOLEAN DEFAULT 0;
 
 CREATE TABLE temas (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -92,12 +93,10 @@ CREATE TABLE temas (
   FOREIGN KEY (id_clase) REFERENCES clases(id) ON DELETE CASCADE
 );
 
-CREATE TABLE tema_tarea (
+CREATE TABLE avisos_temas (
+  id_aviso INT,
   id_tema INT,
-  id_tarea INT,
-  PRIMARY KEY (id_tema, id_tarea),
-  FOREIGN KEY (id_tema) REFERENCES temas(id) ON DELETE CASCADE,
-  FOREIGN KEY (id_tarea) REFERENCES avisos(id) ON DELETE CASCADE
+  PRIMARY KEY (id_aviso, id_tema),
+  FOREIGN KEY (id_aviso) REFERENCES avisos(id) ON DELETE CASCADE,
+  FOREIGN KEY (id_tema) REFERENCES temas(id) ON DELETE CASCADE
 );
-
-ALTER TABLE avisos ADD COLUMN es_material BOOLEAN DEFAULT 0;
