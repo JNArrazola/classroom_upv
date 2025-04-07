@@ -18,6 +18,8 @@ const ClaseDetalleMaestro = () => {
   const [adjuntos, setAdjuntos] = useState([]);
   const [avisos, setAvisos] = useState([]);
   const [mostrarFormularioAviso, setMostrarFormularioAviso] = useState(false);
+  const [tipoPublicacion, setTipoPublicacion] = useState('aviso');
+  const [fechaEntrega, setFechaEntrega] = useState('');
   const [menuAvisoActivo, setMenuAvisoActivo] = useState(null);
   const [editandoId, setEditandoId] = useState(null);
   const [textoEditado, setTextoEditado] = useState('');
@@ -48,7 +50,7 @@ const ClaseDetalleMaestro = () => {
 
   const eliminarAlumno = async (idAlumno) => {
     if (!window.confirm('¿Seguro que quieres eliminar a este alumno de la clase?')) return;
-  
+
     try {
       await axios.delete(`http://localhost:3001/api/clases/${id}/alumnos/${idAlumno}`, {
         headers: { Authorization: `Bearer ${usuario.token}` }
@@ -59,7 +61,6 @@ const ClaseDetalleMaestro = () => {
       alert('No se pudo eliminar el alumno.');
     }
   };
-  
 
   const handleBuscar = async (e) => {
     e.preventDefault();
@@ -95,11 +96,15 @@ const ClaseDetalleMaestro = () => {
 
   const publicarAviso = async (e) => {
     e.preventDefault();
-    if (!nuevoAviso.trim()) return alert('El texto del aviso es obligatorio.');
+    if (!nuevoAviso.trim()) return alert('El texto es obligatorio.');
 
     const formData = new FormData();
     formData.append('id_clase', id);
     formData.append('texto', nuevoAviso);
+    formData.append('es_tarea', tipoPublicacion === 'tarea' ? '1' : '0');
+    if (tipoPublicacion === 'tarea') {
+      formData.append('fecha_entrega', fechaEntrega);
+    }
     for (let i = 0; i < adjuntos.length; i++) {
       formData.append('archivos', adjuntos[i]);
     }
@@ -113,15 +118,17 @@ const ClaseDetalleMaestro = () => {
       });
       setNuevoAviso('');
       setAdjuntos([]);
+      setFechaEntrega('');
+      setTipoPublicacion('aviso');
       setMostrarFormularioAviso(false);
       cargarAvisos();
     } catch (err) {
-      console.error('Error al publicar aviso:', err);
+      console.error('Error al publicar:', err);
     }
   };
 
   const eliminarAviso = async (idAviso) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este aviso?')) return;
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta publicación?')) return;
 
     try {
       await axios.delete(`http://localhost:3001/api/avisos/${idAviso}`, {
@@ -132,7 +139,7 @@ const ClaseDetalleMaestro = () => {
       cargarAvisos();
     } catch (err) {
       console.error('Error al eliminar aviso:', err);
-      alert('No se pudo eliminar el aviso.');
+      alert('No se pudo eliminar la publicación.');
     }
   };
 
@@ -148,8 +155,8 @@ const ClaseDetalleMaestro = () => {
       setTextoEditado('');
       cargarAvisos();
     } catch (err) {
-      console.error('Error al editar aviso:', err);
-      alert('No se pudo actualizar el aviso.');
+      console.error('Error al editar:', err);
+      alert('No se pudo actualizar.');
     }
   };
 
@@ -167,7 +174,7 @@ const ClaseDetalleMaestro = () => {
       <p><strong>Cuatrimestre:</strong> {clase.cuatrimestre}</p>
 
       <div className="clase-tabs">
-        <button onClick={() => setSeccion('avisos')}>📢 Avisos</button>
+        <button onClick={() => setSeccion('avisos')}>📢 Avisos / Tareas</button>
         <button onClick={() => setSeccion('alumnos')}>👥 Alumnos</button>
       </div>
 
@@ -175,27 +182,43 @@ const ClaseDetalleMaestro = () => {
         <div className="avisos-seccion">
           <div className="boton-mas-contenedor">
             <button onClick={() => setMostrarFormularioAviso(prev => !prev)} className="boton-mas">＋</button>
-            {mostrarFormularioAviso && (
-              <div className="menu-mas">
-                <button onClick={() => setMostrarFormularioAviso('aviso')}>📢 Publicar aviso</button>
-              </div>
-            )}
           </div>
 
-          {mostrarFormularioAviso === 'aviso' && (
+          {mostrarFormularioAviso && (
             <form onSubmit={publicarAviso} className="form-aviso">
+              <label>
+                Tipo:
+                <select value={tipoPublicacion} onChange={(e) => setTipoPublicacion(e.target.value)}>
+                  <option value="aviso">📢 Aviso</option>
+                  <option value="tarea">📝 Tarea</option>
+                </select>
+              </label>
+
+              {tipoPublicacion === 'tarea' && (
+                <label>
+                  Fecha de entrega:
+                  <input
+                    type="date"
+                    value={fechaEntrega}
+                    onChange={(e) => setFechaEntrega(e.target.value)}
+                  />
+                </label>
+              )}
+
               <textarea
                 value={nuevoAviso}
                 onChange={(e) => setNuevoAviso(e.target.value)}
-                placeholder="Escribe un aviso para tus alumnos"
+                placeholder="Escribe el contenido"
               ></textarea>
-                <input
-                  type="file"
-                  multiple
-                  onChange = {(e) => setAdjuntos(Array.from(e.target.files))}
-                  accept=".pdf,image/*"
-                />
-              <button type="submit">Publicar aviso</button>
+
+              <input
+                type="file"
+                multiple
+                onChange={(e) => setAdjuntos(Array.from(e.target.files))}
+                accept=".pdf,image/*"
+              />
+
+              <button type="submit">Publicar</button>
             </form>
           )}
 
@@ -204,6 +227,15 @@ const ClaseDetalleMaestro = () => {
               <li key={aviso.id} className="aviso-item">
                 <div className="aviso-header">
                   <strong>{new Date(aviso.fecha).toLocaleString()}</strong>
+                  <span style={{ marginLeft: '10px', fontStyle: 'italic' }}>
+                    {aviso.es_tarea ? '📝 Tarea' : '📢 Aviso'}
+                  </span>
+                  {aviso.es_tarea && aviso.fecha_entrega && (
+                    <span style={{ marginLeft: '10px' }}>
+                      📅 Entrega: {new Date(aviso.fecha_entrega).toLocaleDateString()}
+                    </span>
+                  )}
+
                   <div className="menu-opciones">
                     <button onClick={() => setMenuAvisoActivo(aviso.id)}>⋮</button>
                     {menuAvisoActivo === aviso.id && (
@@ -212,12 +244,13 @@ const ClaseDetalleMaestro = () => {
                           setEditandoId(aviso.id);
                           setTextoEditado(aviso.texto);
                           setMenuAvisoActivo(null);
-                        }}>✏️ Editar aviso</button>
-                        <button onClick={() => eliminarAviso(aviso.id)}>🗑 Eliminar aviso</button>
+                        }}>✏️ Editar</button>
+                        <button onClick={() => eliminarAviso(aviso.id)}>🗑 Eliminar</button>
                       </div>
                     )}
                   </div>
                 </div>
+
                 {editandoId === aviso.id ? (
                   <>
                     <textarea
@@ -232,40 +265,41 @@ const ClaseDetalleMaestro = () => {
                 ) : (
                   <p>{aviso.texto}</p>
                 )}
-{aviso.archivos && aviso.archivos.length > 0 && (
-  <div className="adjuntos-grid">
-    {aviso.archivos.map((archivo, index) => {
-      const isImage = archivo.match(/\.(jpg|jpeg|png|gif|png)$/i);
-      const isPDF = archivo.match(/\.pdf$/i);
-      return (
-        <div key={index} className="adjunto-card">
-          {isImage ? (
-            <img
-              src={`http://localhost:3001/storage/${archivo}`}
-              alt={`Archivo ${index}`}
-              className="imagen-miniatura"
-            />
-          ) : isPDF ? (
-            <iframe
-              src={`http://localhost:3001/storage/${archivo}#toolbar=0&navpanes=0&scrollbar=0&page=1`}
-              type="application/pdf"
-              className="pdf-miniatura"
-            ></iframe>
-          ) : (
-            <p>Archivo {index + 1}</p>
-          )}
-          <a
-            href={`http://localhost:3001/storage/${archivo}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Ver archivo
-          </a>
-        </div>
-      );
-    })}
-  </div>
-)}
+
+                {aviso.archivos && aviso.archivos.length > 0 && (
+                  <div className="adjuntos-grid">
+                    {aviso.archivos.map((archivo, index) => {
+                      const isImage = archivo.match(/\.(jpg|jpeg|png|gif)$/i);
+                      const isPDF = archivo.match(/\.pdf$/i);
+                      return (
+                        <div key={index} className="adjunto-card">
+                          {isImage ? (
+                            <img
+                              src={`http://localhost:3001/storage/${archivo}`}
+                              alt={`Archivo ${index}`}
+                              className="imagen-miniatura"
+                            />
+                          ) : isPDF ? (
+                            <iframe
+                              src={`http://localhost:3001/storage/${archivo}#toolbar=0`}
+                              type="application/pdf"
+                              className="pdf-miniatura"
+                            ></iframe>
+                          ) : (
+                            <p>Archivo {index + 1}</p>
+                          )}
+                          <a
+                            href={`http://localhost:3001/storage/${archivo}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Ver archivo
+                          </a>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -296,7 +330,7 @@ const ClaseDetalleMaestro = () => {
 
           <h4>Alumnos registrados en la clase</h4>
           <ul>
-          {alumnos.map((alumno) => (
+            {alumnos.map((alumno) => (
               <li key={alumno.id}>
                 {alumno.nombre} - {alumno.matricula} - {alumno.correo}
                 <button onClick={() => eliminarAlumno(alumno.id)} style={{ marginLeft: '1rem' }}>

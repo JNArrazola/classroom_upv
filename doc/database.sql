@@ -66,3 +66,7 @@ CREATE TABLE archivos_avisos (
 );
 
 INSERT INTO carreras (nombre) VALUES ("ITI"), ("IM"), ("IM"), ("LAYGE"), ("ISA")
+
+--- SEGUNDA ENTREGA
+ALTER TABLE avisos ADD COLUMN es_tarea BOOLEAN DEFAULT FALSE;
+ALTER TABLE avisos ADD COLUMN fecha_entrega DATE;
