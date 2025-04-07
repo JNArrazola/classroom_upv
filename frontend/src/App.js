@@ -6,6 +6,7 @@ import ClaseDetalleMaestro from './pages/ClaseDetalleMaestro';
 import ClaseDetalleAlumno from './pages/ClaseDetalleAlumno';
 import AlumnoClases from './pages/AlumnoClases'; 
 import TareaDetalleMaestro from './pages/TareaDetalleMaestro';
+import TareaDetalleAlumno from './pages/TareaDetalleAlumno';
 
 const App = () => {
   return (
@@ -16,7 +17,8 @@ const App = () => {
       <Route path="/maestro/clase/:id" element={<ClaseDetalleMaestro />} />
       <Route path="/alumno/clases" element={<AlumnoClases />} /> {}
       <Route path="/alumno/clase/:id" element={<ClaseDetalleAlumno />} />
-      <Route path="/clase/:idClase/tarea/:idTarea" element={<TareaDetalleMaestro />} />
+      <Route path="/maestro/clase/:idClase/tarea/:idTarea" element={<TareaDetalleMaestro />} />
+      <Route path="/alumno/clase/:idClase/tarea/:idTarea" element={<TareaDetalleAlumno />} />
       </Routes>
   );
 };

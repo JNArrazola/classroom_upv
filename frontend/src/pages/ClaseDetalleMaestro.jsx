@@ -232,7 +232,7 @@ const ClaseDetalleMaestro = () => {
                 <div
                   className="aviso-header"
                   style={{ cursor: aviso.es_tarea ? 'pointer' : 'default' }}
-                  onClick={() => aviso.es_tarea && navigate(`/clase/${id}/tarea/${aviso.id}`)}
+                  onClick={() => aviso.es_tarea && navigate(`/maestro/clase/${id}/tarea/${aviso.id}`)}
                   >
                   <strong>{new Date(aviso.fecha).toLocaleString()}</strong>
                   <span style={{ marginLeft: '10px', fontStyle: 'italic' }}>

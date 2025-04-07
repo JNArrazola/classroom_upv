@@ -2,45 +2,40 @@ const db = require('../db');
 const path = require('path');
 
 exports.getAvisosPorClase = (req, res) => {
-  const id_clase = parseInt(req.params.id);
+  const { idClase } = req.params;
 
   const queryAvisos = `
-    SELECT a.id, a.contenido AS texto, a.creado_en AS fecha, a.id_clase,
-           a.es_tarea, a.fecha_entrega
-    FROM avisos a
-    WHERE a.id_clase = ?
-    ORDER BY a.creado_en DESC
+    SELECT id, contenido AS texto, creado_en AS fecha, fecha_entrega, es_tarea
+    FROM avisos
+    WHERE id_clase = ?
+    ORDER BY creado_en DESC
   `;
 
-  db.query(queryAvisos, [id_clase], (err, avisos) => {
-    if (err) return res.status(500).json({ mensaje: 'Error al obtener avisos' });
+  db.query(queryAvisos, [idClase], async (err, avisos) => {
+    if (err) {
+      console.error('Error al obtener avisos:', err);
+      return res.status(500).json({ mensaje: 'Error al obtener avisos' });
+    }
 
-    if (avisos.length === 0) return res.json([]);
+    // Ahora traemos los archivos
+    const avisosConArchivos = await Promise.all(
+      avisos.map(aviso => {
+        return new Promise((resolve, reject) => {
+          const queryArchivos = `SELECT ruta_archivo FROM archivos_avisos WHERE id_aviso = ?`;
+          db.query(queryArchivos, [aviso.id], (err2, archivos) => {
+            if (err2) return reject(err2);
+            aviso.archivos = archivos.map(a => a.ruta_archivo);
+            resolve(aviso);
+          });
+        });
+      })
+    );
 
-    const ids = avisos.map(a => a.id);
-    const placeholders = ids.map(() => '?').join(',');
-    const queryArchivos = `
-      SELECT id_aviso, ruta_archivo
-      FROM archivos_avisos
-      WHERE id_aviso IN (${placeholders})
-    `;
-
-    db.query(queryArchivos, ids, (err2, archivos) => {
-      if (err2) return res.status(500).json({ mensaje: 'Error al obtener archivos' });
-
-      const avisosConArchivos = avisos.map(a => ({
-        ...a,
-        es_tarea: Boolean(a.es_tarea), 
-        fecha_entrega: a.fecha_entrega,
-        archivos: archivos
-          .filter(file => file.id_aviso === a.id)
-          .map(file => file.ruta_archivo)
-      }));
-
-      res.json(avisosConArchivos);
-    });
+    res.json(avisosConArchivos);
   });
 };
+
+
 
 
 // Crear un nuevo aviso con archivos

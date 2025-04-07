@@ -10,10 +10,12 @@ const path = require('path');
 const alumnoRoutes = require('./routes/alumno');
 const usuariosRoutes = require('./routes/usuarios');
 const tareasRoutes = require('./routes/tareas');
+const entregasRoutes = require('./routes/entregas');
 
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/entregas', entregasRoutes);
 app.use('/api/tareas', tareasRoutes);
 app.use('/api/usuarios', usuariosRoutes); 
 app.use('/api/avisos', avisosRoutes);

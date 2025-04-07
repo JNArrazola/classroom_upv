@@ -35,22 +35,21 @@ exports.getEntregasPorTarea = (req, res) => {
   };
   
 
-exports.calificarEntrega = (req, res) => {
-  const id = parseInt(req.params.id);
-  const { calificacion } = req.body;
-
-  const query = `UPDATE entregas SET calificacion = ? WHERE id = ?`;
-
-  db.query(query, [calificacion, id], (err, result) => {
-    if (err) {
-      console.error('Error al calificar entrega:', err);
-      return res.status(500).json({ mensaje: 'Error al calificar entrega' });
-    }
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ mensaje: 'Entrega no encontrada' });
-    }
-
-    res.json({ mensaje: 'Calificación guardada' });
-  });
-};
+  exports.calificarEntrega = (req, res) => {
+    const { id } = req.params;
+    const { calificacion } = req.body;
+  
+    const query = `
+      UPDATE entregas SET calificacion = ? WHERE id = ?
+    `;
+  
+    db.query(query, [calificacion, id], (err, resultado) => {
+      if (err) {
+        console.error('Error al calificar entrega:', err);
+        return res.status(500).json({ mensaje: 'Error al calificar' });
+      }
+  
+      res.json({ mensaje: 'Calificación guardada correctamente' });
+    });
+  };
+  
