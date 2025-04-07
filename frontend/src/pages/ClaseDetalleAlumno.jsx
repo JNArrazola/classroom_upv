@@ -111,12 +111,23 @@ const ClaseDetalleAlumno = () => {
                 <li key={aviso.id} className="aviso-item">
                   <div
                     className="aviso-header"
-                    style={{ cursor: aviso.es_tarea ? 'pointer' : 'default' }}
-                    onClick={() => aviso.es_tarea && navigate(`/alumno/clase/${id}/tarea/${aviso.id}`)}
+                    style={{ cursor: (aviso.es_tarea || aviso.es_material) ? 'pointer' : 'default' }}
+                    onClick={() => {
+                      if (aviso.es_tarea) {
+                        navigate(`/alumno/clase/${id}/tarea/${aviso.id}`);
+                      } else if (aviso.es_material) {
+                        navigate(`/alumno/clase/${id}/material/${aviso.id}`);
+                      }
+                    }}
                     >
                     <strong>{new Date(aviso.fecha).toLocaleString()}</strong>
                     <span style={{ marginLeft: '10px', fontStyle: 'italic' }}>
-                      {aviso.es_tarea ? '📝 Tarea' : '📢 Aviso'}
+                    {aviso.es_tarea
+                    ? '📝 Tarea'
+                    : aviso.es_material
+                    ? '📚 Material'
+                    : '📢 Aviso'}
+
                     </span>
                     {aviso.es_tarea && aviso.fecha_entrega && (
                       <span style={{ marginLeft: '10px' }}>

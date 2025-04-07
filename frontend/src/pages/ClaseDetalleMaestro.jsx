@@ -100,12 +100,13 @@ const ClaseDetalleMaestro = () => {
     formData.append('id_clase', id);
     formData.append('texto', nuevoAviso);
     formData.append('es_tarea', tipoPublicacion === 'tarea' ? '1' : '0');
+    formData.append('es_material', tipoPublicacion === 'material' ? '1' : '0');
 
     if (tipoPublicacion === 'tarea') {
       formData.append('fecha_entrega', fechaEntrega);
-      formData.append('valor_maximo', valorMaximo || 100); 
+      formData.append('valor_maximo', valorMaximo || 100);
     }
-    
+
     for (let i = 0; i < adjuntos.length; i++) {
       formData.append('archivos', adjuntos[i]);
     }
@@ -120,6 +121,7 @@ const ClaseDetalleMaestro = () => {
       setNuevoAviso('');
       setAdjuntos([]);
       setFechaEntrega('');
+      setValorMaximo('');
       setTipoPublicacion('aviso');
       setMostrarFormularioAviso(false);
       cargarAvisos();
@@ -186,31 +188,32 @@ const ClaseDetalleMaestro = () => {
                 <select value={tipoPublicacion} onChange={(e) => setTipoPublicacion(e.target.value)}>
                   <option value="aviso">📢 Aviso</option>
                   <option value="tarea">📝 Tarea</option>
+                  <option value="material">📚 Material</option>
                 </select>
               </label>
               {tipoPublicacion === 'tarea' && (
-              <>
-                <label>
-                  Fecha de entrega:
-                  <input
-                    type="date"
-                    value={fechaEntrega}
-                    onChange={(e) => setFechaEntrega(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Valor máximo:
-                  <input
-                    type="number"
-                    min="1"
-                    max="1000"
-                    value={valorMaximo}
-                    onChange={(e) => setValorMaximo(e.target.value)}
-                    placeholder="Ej. 100"
-                  />
-                </label>
-              </>
-            )}
+                <>
+                  <label>
+                    Fecha de entrega:
+                    <input
+                      type="date"
+                      value={fechaEntrega}
+                      onChange={(e) => setFechaEntrega(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Valor máximo:
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000"
+                      value={valorMaximo}
+                      onChange={(e) => setValorMaximo(e.target.value)}
+                      placeholder="Ej. 100"
+                    />
+                  </label>
+                </>
+              )}
               <textarea
                 value={nuevoAviso}
                 onChange={(e) => setNuevoAviso(e.target.value)}
@@ -231,12 +234,18 @@ const ClaseDetalleMaestro = () => {
               <li key={aviso.id} className="aviso-item">
                 <div
                   className="aviso-header"
-                  style={{ cursor: aviso.es_tarea ? 'pointer' : 'default' }}
-                  onClick={() => aviso.es_tarea && navigate(`/maestro/clase/${id}/tarea/${aviso.id}`)}
-                  >
+                  style={{ cursor: aviso.es_tarea || aviso.es_material ? 'pointer' : 'default' }}
+                  onClick={() => {
+                    if (aviso.es_tarea) {
+                      navigate(`/maestro/clase/${id}/tarea/${aviso.id}`);
+                    } else if (aviso.es_material) {
+                      navigate(`/maestro/clase/${id}/material/${aviso.id}`);
+                    }
+                  }}
+                >
                   <strong>{new Date(aviso.fecha).toLocaleString()}</strong>
                   <span style={{ marginLeft: '10px', fontStyle: 'italic' }}>
-                    {aviso.es_tarea ? '📝 Tarea' : '📢 Aviso'}
+                    {aviso.es_tarea ? '📝 Tarea' : aviso.es_material ? '📚 Material' : '📢 Aviso'}
                   </span>
                   {aviso.es_tarea && aviso.fecha_entrega && (
                     <span style={{ marginLeft: '10px' }}>

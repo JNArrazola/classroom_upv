@@ -15,6 +15,7 @@ const entregasRoutes = require('./routes/entregas');
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/temas', require('./routes/temas'));
 app.use('/api/entregas', entregasRoutes);
 app.use('/api/tareas', tareasRoutes);
 app.use('/api/usuarios', usuariosRoutes); 

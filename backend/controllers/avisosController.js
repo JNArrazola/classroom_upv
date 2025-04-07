@@ -5,7 +5,7 @@ exports.getAvisosPorClase = (req, res) => {
   const { idClase } = req.params;
 
   const queryAvisos = `
-    SELECT id, contenido AS texto, creado_en AS fecha, fecha_entrega, es_tarea
+    SELECT id, contenido AS texto, creado_en AS fecha, fecha_entrega, es_tarea, es_material
     FROM avisos
     WHERE id_clase = ?
     ORDER BY creado_en DESC
@@ -17,7 +17,6 @@ exports.getAvisosPorClase = (req, res) => {
       return res.status(500).json({ mensaje: 'Error al obtener avisos' });
     }
 
-    // Ahora traemos los archivos
     const avisosConArchivos = await Promise.all(
       avisos.map(aviso => {
         return new Promise((resolve, reject) => {
@@ -36,27 +35,26 @@ exports.getAvisosPorClase = (req, res) => {
 };
 
 
-
-
 // Crear un nuevo aviso con archivos
 exports.crearAviso = (req, res) => {
-  const { id_clase, texto, es_tarea, fecha_entrega, valor_maximo } = req.body;
+  const { id_clase, texto, es_tarea, es_material, fecha_entrega, valor_maximo } = req.body;
   const archivos = req.files || [];
   const id_maestro = req.user.id;
 
   const esTareaBool = es_tarea === '1' || es_tarea === 1 || es_tarea === true || es_tarea === 'true';
+  const esMaterialBool = es_material === '1' || es_material === 1 || es_material === true || es_material === 'true';
   const fecha = esTareaBool ? fecha_entrega || null : null;
   const valorFinal = esTareaBool ? (valor_maximo || 100) : null;
 
   const insertAviso = `
-    INSERT INTO avisos (id_clase, id_maestro, contenido, es_tarea, fecha_entrega, valor_maximo)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO avisos (id_clase, id_maestro, contenido, es_tarea, es_material, fecha_entrega, valor_maximo)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(insertAviso, [id_clase, id_maestro, texto, esTareaBool, fecha, valorFinal], (err, result) => {
+  db.query(insertAviso, [id_clase, id_maestro, texto, esTareaBool, esMaterialBool, fecha, valorFinal], (err, result) => {
     if (err) {
-      console.error('Error al crear aviso/tarea:', err);
-      return res.status(500).json({ mensaje: 'Error al crear aviso/tarea' });
+      console.error('Error al crear aviso/tarea/material:', err);
+      return res.status(500).json({ mensaje: 'Error al crear aviso/tarea/material' });
     }
 
     const id_aviso = result.insertId;
@@ -100,6 +98,7 @@ exports.getAvisoPorId = (req, res) => {
       fecha_entrega,
       id_clase,
       es_tarea,
+      es_material,
       valor_maximo
     FROM avisos
     WHERE id = ?
@@ -130,6 +129,7 @@ exports.getAvisoPorId = (req, res) => {
     });
   });
 };
+
 
 
 
@@ -204,5 +204,48 @@ exports.getAvisosPorClaseAlumno = (req, res) => {
 
       res.json(avisosConArchivos);
     });
+  });
+};
+
+exports.crearMaterial = (req, res) => {
+  const { id_clase, texto, temas } = req.body;
+  const archivos = req.files?.map(file => file.filename) || [];
+
+  const query = `
+    INSERT INTO avisos (id_clase, texto, fecha, es_tarea, es_material, fecha_entrega)
+    VALUES (?, ?, NOW(), 0, 1, NULL)
+  `;
+
+  db.query(query, [id_clase, texto], (err, resultado) => {
+    if (err) {
+      console.error('Error al crear material:', err);
+      return res.status(500).json({ mensaje: 'Error al crear material' });
+    }
+
+    const id_aviso = resultado.insertId;
+
+    if (temas?.length > 0) {
+      const temaValues = temas.map(id => [id_aviso, id]);
+      db.query(
+        'INSERT INTO avisos_temas (id_aviso, id_tema) VALUES ?',
+        [temaValues],
+        (err2) => {
+          if (err2) console.error('Error al vincular temas:', err2);
+        }
+      );
+    }
+
+    if (archivos.length > 0) {
+      const archivosValues = archivos.map(nombre => [id_aviso, nombre]);
+      db.query(
+        'INSERT INTO archivos_avisos (id_aviso, nombre_archivo) VALUES ?',
+        [archivosValues],
+        (err3) => {
+          if (err3) console.error('Error al guardar archivos del material:', err3);
+        }
+      );
+    }
+
+    res.status(201).json({ mensaje: 'Material creado correctamente' });
   });
 };

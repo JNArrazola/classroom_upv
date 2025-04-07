@@ -28,5 +28,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.post('/', verificarToken, upload.array('archivos'), avisosController.crearAviso);
+router.post('/material', upload.array('archivos', 5), avisosController.crearMaterial);
 
 module.exports = router;
