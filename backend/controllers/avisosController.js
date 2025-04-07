@@ -45,19 +45,20 @@ exports.getAvisosPorClase = (req, res) => {
 
 // Crear un nuevo aviso con archivos
 exports.crearAviso = (req, res) => {
-  const { id_clase, texto, es_tarea, fecha_entrega } = req.body;
+  const { id_clase, texto, es_tarea, fecha_entrega, valor_maximo } = req.body;
   const archivos = req.files || [];
   const id_maestro = req.user.id;
 
-  const insertAviso = `
-    INSERT INTO avisos (id_clase, id_maestro, contenido, es_tarea, fecha_entrega)
-    VALUES (?, ?, ?, ?, ?)
-  `;
-
   const esTareaBool = es_tarea === '1' || es_tarea === 1 || es_tarea === true || es_tarea === 'true';
   const fecha = esTareaBool ? fecha_entrega || null : null;
+  const valorFinal = esTareaBool ? (valor_maximo || 100) : null;
 
-  db.query(insertAviso, [id_clase, id_maestro, texto, esTareaBool, fecha], (err, result) => {
+  const insertAviso = `
+    INSERT INTO avisos (id_clase, id_maestro, contenido, es_tarea, fecha_entrega, valor_maximo)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(insertAviso, [id_clase, id_maestro, texto, esTareaBool, fecha, valorFinal], (err, result) => {
     if (err) {
       console.error('Error al crear aviso/tarea:', err);
       return res.status(500).json({ mensaje: 'Error al crear aviso/tarea' });
@@ -88,6 +89,49 @@ exports.crearAviso = (req, res) => {
       }
 
       res.status(201).json({ mensaje: 'Publicado correctamente con archivos' });
+    });
+  });
+};
+
+
+exports.getAvisoPorId = (req, res) => {
+  const { id } = req.params;
+
+  const query = `
+    SELECT 
+      id,
+      contenido AS texto,
+      creado_en AS fecha,
+      fecha_entrega,
+      id_clase,
+      es_tarea,
+      valor_maximo
+    FROM avisos
+    WHERE id = ?
+  `;
+
+  db.query(query, [id], (err, resultados) => {
+    if (err) {
+      console.error('Error al obtener aviso por ID:', err);
+      return res.status(500).json({ mensaje: 'Error interno' });
+    }
+
+    if (resultados.length === 0) {
+      return res.status(404).json({ mensaje: 'Aviso no encontrado' });
+    }
+
+    const aviso = resultados[0];
+
+    const queryArchivos = `SELECT ruta_archivo FROM archivos_avisos WHERE id_aviso = ?`;
+
+    db.query(queryArchivos, [id], (err2, archivos) => {
+      if (err2) {
+        console.error('Error al obtener archivos del aviso:', err2);
+        return res.status(500).json({ mensaje: 'Error al obtener archivos del aviso' });
+      }
+
+      aviso.archivos = archivos.map(a => a.ruta_archivo);
+      res.json(aviso);
     });
   });
 };

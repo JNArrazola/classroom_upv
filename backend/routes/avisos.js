@@ -11,6 +11,7 @@ router.delete('/:id', avisosController.eliminarAviso);
 router.put('/:id', avisosController.editarAviso);
 router.get('/clase/:id/alumno', getAvisosPorClaseAlumno);
 router.get('/clase/:id', avisosController.getAvisosPorClase);
+router.get('/:id', avisosController.getAvisoPorId);
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {

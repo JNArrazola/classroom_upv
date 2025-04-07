@@ -70,3 +70,17 @@ INSERT INTO carreras (nombre) VALUES ("ITI"), ("IM"), ("IM"), ("LAYGE"), ("ISA")
 --- SEGUNDA ENTREGA
 ALTER TABLE avisos ADD COLUMN es_tarea BOOLEAN DEFAULT FALSE;
 ALTER TABLE avisos ADD COLUMN fecha_entrega DATE;
+ALTER TABLE avisos ADD COLUMN puntos_maximos INT;
+
+CREATE TABLE entregas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  id_tarea INT,
+  id_alumno INT,
+  archivo VARCHAR(255),
+  fecha_entrega DATETIME DEFAULT CURRENT_TIMESTAMP,
+  calificacion DECIMAL(5,2),
+  FOREIGN KEY (id_tarea) REFERENCES avisos(id),
+  FOREIGN KEY (id_alumno) REFERENCES usuarios(id)
+);
+
+ALTER TABLE avisos ADD COLUMN valor_maximo INT DEFAULT 100;

@@ -9,10 +9,12 @@ const avisosRoutes = require('./routes/avisos');
 const path = require('path');
 const alumnoRoutes = require('./routes/alumno');
 const usuariosRoutes = require('./routes/usuarios');
+const tareasRoutes = require('./routes/tareas');
 
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/tareas', tareasRoutes);
 app.use('/api/usuarios', usuariosRoutes); 
 app.use('/api/avisos', avisosRoutes);
 app.use('/api/clases', clasesRoutes);

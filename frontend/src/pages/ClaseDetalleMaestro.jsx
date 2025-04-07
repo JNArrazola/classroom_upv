@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import './ClaseDetalleMaestro.css';
 
 const ClaseDetalleMaestro = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { usuario } = useAuth();
+
+  const [valorMaximo, setValorMaximo] = useState('');
   const [clase, setClase] = useState(null);
   const [seccion, setSeccion] = useState('avisos');
-
   const [alumnos, setAlumnos] = useState([]);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
-
   const [nuevoAviso, setNuevoAviso] = useState('');
   const [adjuntos, setAdjuntos] = useState([]);
   const [avisos, setAvisos] = useState([]);
@@ -50,14 +51,12 @@ const ClaseDetalleMaestro = () => {
 
   const eliminarAlumno = async (idAlumno) => {
     if (!window.confirm('¿Seguro que quieres eliminar a este alumno de la clase?')) return;
-
     try {
       await axios.delete(`http://localhost:3001/api/clases/${id}/alumnos/${idAlumno}`, {
         headers: { Authorization: `Bearer ${usuario.token}` }
       });
       cargarAlumnos();
     } catch (err) {
-      console.error('Error al eliminar alumno:', err);
       alert('No se pudo eliminar el alumno.');
     }
   };
@@ -97,14 +96,16 @@ const ClaseDetalleMaestro = () => {
   const publicarAviso = async (e) => {
     e.preventDefault();
     if (!nuevoAviso.trim()) return alert('El texto es obligatorio.');
-
     const formData = new FormData();
     formData.append('id_clase', id);
     formData.append('texto', nuevoAviso);
     formData.append('es_tarea', tipoPublicacion === 'tarea' ? '1' : '0');
+
     if (tipoPublicacion === 'tarea') {
       formData.append('fecha_entrega', fechaEntrega);
+      formData.append('valor_maximo', valorMaximo || 100); 
     }
+    
     for (let i = 0; i < adjuntos.length; i++) {
       formData.append('archivos', adjuntos[i]);
     }
@@ -129,16 +130,12 @@ const ClaseDetalleMaestro = () => {
 
   const eliminarAviso = async (idAviso) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar esta publicación?')) return;
-
     try {
       await axios.delete(`http://localhost:3001/api/avisos/${idAviso}`, {
-        headers: {
-          Authorization: `Bearer ${usuario.token}`
-        }
+        headers: { Authorization: `Bearer ${usuario.token}` }
       });
       cargarAvisos();
     } catch (err) {
-      console.error('Error al eliminar aviso:', err);
       alert('No se pudo eliminar la publicación.');
     }
   };
@@ -150,12 +147,10 @@ const ClaseDetalleMaestro = () => {
       }, {
         headers: { Authorization: `Bearer ${usuario.token}` }
       });
-
       setEditandoId(null);
       setTextoEditado('');
       cargarAvisos();
     } catch (err) {
-      console.error('Error al editar:', err);
       alert('No se pudo actualizar.');
     }
   };
@@ -193,8 +188,8 @@ const ClaseDetalleMaestro = () => {
                   <option value="tarea">📝 Tarea</option>
                 </select>
               </label>
-
               {tipoPublicacion === 'tarea' && (
+              <>
                 <label>
                   Fecha de entrega:
                   <input
@@ -203,21 +198,30 @@ const ClaseDetalleMaestro = () => {
                     onChange={(e) => setFechaEntrega(e.target.value)}
                   />
                 </label>
-              )}
-
+                <label>
+                  Valor máximo:
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={valorMaximo}
+                    onChange={(e) => setValorMaximo(e.target.value)}
+                    placeholder="Ej. 100"
+                  />
+                </label>
+              </>
+            )}
               <textarea
                 value={nuevoAviso}
                 onChange={(e) => setNuevoAviso(e.target.value)}
                 placeholder="Escribe el contenido"
               ></textarea>
-
               <input
                 type="file"
                 multiple
                 onChange={(e) => setAdjuntos(Array.from(e.target.files))}
                 accept=".pdf,image/*"
               />
-
               <button type="submit">Publicar</button>
             </form>
           )}
@@ -225,7 +229,11 @@ const ClaseDetalleMaestro = () => {
           <ul className="avisos-lista">
             {avisos.map(aviso => (
               <li key={aviso.id} className="aviso-item">
-                <div className="aviso-header">
+                <div
+                  className="aviso-header"
+                  style={{ cursor: aviso.es_tarea ? 'pointer' : 'default' }}
+                  onClick={() => aviso.es_tarea && navigate(`/clase/${id}/tarea/${aviso.id}`)}
+                  >
                   <strong>{new Date(aviso.fecha).toLocaleString()}</strong>
                   <span style={{ marginLeft: '10px', fontStyle: 'italic' }}>
                     {aviso.es_tarea ? '📝 Tarea' : '📢 Aviso'}
@@ -235,8 +243,7 @@ const ClaseDetalleMaestro = () => {
                       📅 Entrega: {new Date(aviso.fecha_entrega).toLocaleDateString()}
                     </span>
                   )}
-
-                  <div className="menu-opciones">
+                  <div className="menu-opciones" onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => setMenuAvisoActivo(aviso.id)}>⋮</button>
                     {menuAvisoActivo === aviso.id && (
                       <div className="menu-aviso">
