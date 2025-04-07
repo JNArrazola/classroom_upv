@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CrearTemaModal from '../modals/CrearTemaModal';
 import EditarTemaModal from '../modals/EditarTemaModal';
@@ -9,6 +9,7 @@ import './TrabajoEnClaseMaestro.css';
 
 const TrabajoEnClaseMaestro = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { usuario } = useAuth();
   const [temas, setTemas] = useState([]);
   const [modalCrear, setModalCrear] = useState(false);
@@ -86,8 +87,7 @@ const TrabajoEnClaseMaestro = () => {
 
   const filtrarAvisos = () => {
     return avisos.filter(aviso =>
-      aviso.texto.toLowerCase().includes(busqueda.toLowerCase()) &&
-      !temas.some(t => t.avisos?.some(a => a.id === aviso.id))
+      aviso.texto.toLowerCase().includes(busqueda.toLowerCase())
     );
   };
 
@@ -96,6 +96,7 @@ const TrabajoEnClaseMaestro = () => {
       <h2>📂 Trabajo en Clase</h2>
       <button onClick={() => setModalCrear(true)}>➕ Crear nuevo tema</button>
 
+    <hr/>
       {temas.map((tema) => (
         <div key={tema.id} className="tema-bloque">
           <div className="tema-header">
@@ -109,7 +110,15 @@ const TrabajoEnClaseMaestro = () => {
           <ul className="avisos-en-tema">
             {tema.avisos?.map((a) => (
               <li key={a.id}>
-                <span>{a.es_tarea ? '📝' : a.es_material ? '📚' : '📢'} {a.texto}</span>
+                <span
+                  onClick={() => {
+                    if (a.es_tarea) navigate(`/maestro/clase/${id}/tarea/${a.id}`);
+                    else if (a.es_material) navigate(`/maestro/clase/${id}/material/${a.id}`);
+                  }}
+                  style={{ cursor: a.es_tarea || a.es_material ? 'pointer' : 'default', textDecoration: 'underline' }}
+                >
+                  {a.es_tarea ? '📝' : a.es_material ? '📚' : '📢'} {a.texto}
+                </span>
               </li>
             ))}
           </ul>

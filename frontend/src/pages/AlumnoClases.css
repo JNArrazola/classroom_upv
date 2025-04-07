@@ -27,4 +27,64 @@
   .tarjeta-clase h3 {
     margin-top: 0;
   }
+
+  .alumno-clases {
+    padding: 20px;
+  }
+  
+  .tarjetas-clases {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .tarjeta-contenedor {
+    background-color: #f4f4f4;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .tarjeta-contenedor:hover {
+    transform: scale(1.01);
+  }
+  
+  .tarjeta-clase {
+    display: block;
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+  }
+  
+  .tarjeta-clase h3 {
+    margin: 0 0 10px;
+  }
+  
+  .tareas-proximas-clase {
+    background-color: #fff;
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    font-size: 0.95rem;
+  }
+  
+  .tareas-proximas-clase ul {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 10px;
+  }
+  
+  .tareas-proximas-clase li {
+    margin-bottom: 8px;
+  }
+  
+  .enlace-tarea {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  .enlace-tarea:hover {
+    text-decoration: underline;
+  }
+  
   
