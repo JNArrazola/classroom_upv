@@ -1,68 +1,112 @@
+// controllers/entregasController.js
 const db = require('../db');
+const fs = require('fs');
+const path = require('path');
 
-// Entrega de tarea con múltiples archivos
+// Guardar borrador o entrega
 exports.entregarTarea = (req, res) => {
   const { id_tarea, id_alumno } = req.body;
   const archivos = req.files;
 
   if (!archivos || archivos.length === 0) {
-    return res.status(400).json({ mensaje: 'Debes adjuntar al menos un archivo' });
+    return res.status(400).json({ mensaje: 'Debes subir al menos un archivo' });
   }
 
-  const fechaEntrega = new Date();  
+  const fechaEntrega = new Date();
+  const values = archivos.map((file) => [id_tarea, id_alumno, file.filename, fechaEntrega, false]);
 
-  // Eliminar entregas previas del mismo alumno y tarea
-  const eliminarQuery = `
-    DELETE FROM entregas
-    WHERE id_tarea = ? AND id_alumno = ?
+  const query = `
+    INSERT INTO entregas (id_tarea, id_alumno, archivo, fecha_entrega, entregado)
+    VALUES ?
   `;
 
-  db.query(eliminarQuery, [id_tarea, id_alumno], (err) => {
+  db.query(query, [values], (err) => {
     if (err) {
-      console.error('Error al eliminar entregas anteriores:', err);
-      return res.status(500).json({ mensaje: 'Error interno al preparar la entrega' });
+      console.error('Error al guardar entrega:', err);
+      return res.status(500).json({ mensaje: 'Error al guardar la entrega' });
     }
 
-    // Insertar múltiples archivos como entregas nuevas
-    const insertQuery = `
-      INSERT INTO entregas (id_tarea, id_alumno, archivo, fecha_entrega)
-      VALUES ?
-    `;
-
-    const values = archivos.map(file => [id_tarea, id_alumno, file.filename, fechaEntrega]);
-
-    db.query(insertQuery, [values], (err2) => {
-      if (err2) {
-        console.error('Error al guardar la entrega:', err2);
-        return res.status(500).json({ mensaje: 'Error al entregar tarea' });
-      }
-
-      res.status(201).json({ mensaje: 'Tarea entregada correctamente' });
-    });
+    res.status(201).json({ mensaje: 'Borrador guardado correctamente' });
   });
 };
 
-// Obtener todas las entregas de un alumno
+// Confirmar entrega (marcar entregado = true)
+exports.confirmarEntrega = (req, res) => {
+  const { id_tarea, id_alumno } = req.body;
+  const query = `
+    UPDATE entregas
+    SET entregado = true
+    WHERE id_tarea = ? AND id_alumno = ?
+  `;
+
+  db.query(query, [id_tarea, id_alumno], (err) => {
+    if (err) {
+      console.error('Error al confirmar entrega:', err);
+      return res.status(500).json({ mensaje: 'Error al confirmar entrega' });
+    }
+    res.status(200).json({ mensaje: 'Entrega confirmada correctamente' });
+  });
+};
+
+// Revertir entrega (marcar entregado = false, pero mantener calificación)
+exports.revertirEntrega = (req, res) => {
+  const { id_tarea, id_alumno } = req.body;
+  const query = `
+    UPDATE entregas
+    SET entregado = false
+    WHERE id_tarea = ? AND id_alumno = ?
+  `;
+
+  db.query(query, [id_tarea, id_alumno], (err) => {
+    if (err) {
+      console.error('Error al revertir entrega:', err);
+      return res.status(500).json({ mensaje: 'Error al revertir entrega' });
+    }
+    res.status(200).json({ mensaje: 'Entrega deshecha correctamente, calificación conservada' });
+  });
+};
+
+// Obtener todas las entregas (borradores o finales)
 exports.getEntregasPorAlumno = (req, res) => {
   const { id } = req.params;
-
   const query = `
-    SELECT e.id, e.id_tarea, e.fecha_entrega, e.archivo, e.calificacion
+    SELECT e.id, e.id_tarea, e.fecha_entrega, e.archivo, e.calificacion, e.entregado
     FROM entregas e
     WHERE e.id_alumno = ?
   `;
 
   db.query(query, [id], (err, resultados) => {
     if (err) {
-      console.error('ERROR al obtener entregas del alumno:', err.sqlMessage || err.message || err);
+      console.error('ERROR al obtener entregas del alumno:', err);
       return res.status(500).json({ mensaje: 'Error al obtener entregas del alumno' });
     }
-
     res.json(resultados || []);
   });
 };
 
-// Calificar una entrega específica
+exports.eliminarEntrega = (req, res) => {
+  const { id } = req.params;
+
+  const query = `SELECT archivo FROM entregas WHERE id = ?`;
+
+  db.query(query, [id], (err, resultados) => {
+    if (err || resultados.length === 0) {
+      return res.status(500).json({ mensaje: 'No se pudo encontrar la entrega' });
+    }
+
+    const archivo = resultados[0].archivo;
+    const ruta = path.join(__dirname, '..', 'storage', archivo);
+    fs.unlink(ruta, () => {});
+
+    db.query(`DELETE FROM entregas WHERE id = ?`, [id], (err) => {
+      if (err) {
+        return res.status(500).json({ mensaje: 'No se pudo eliminar la entrega' });
+      }
+      res.status(200).json({ mensaje: 'Entrega eliminada con éxito' });
+    });
+  });
+};
+
 exports.calificarEntrega = (req, res) => {
   const { id } = req.params;
   const { calificacion } = req.body;
@@ -84,25 +128,5 @@ exports.calificarEntrega = (req, res) => {
     }
 
     res.status(200).json({ mensaje: 'Calificación actualizada correctamente' });
-  });
-};
-
-// Eliminar una entrega por ID
-exports.eliminarEntrega = (req, res) => {
-  const { id } = req.params;
-
-  const query = `DELETE FROM entregas WHERE id = ?`;
-
-  db.query(query, [id], (err, resultado) => {
-    if (err) {
-      console.error('Error al eliminar entrega:', err);
-      return res.status(500).json({ mensaje: 'No se pudo eliminar la entrega' });
-    }
-
-    if (resultado.affectedRows === 0) {
-      return res.status(404).json({ mensaje: 'Entrega no encontrada' });
-    }
-
-    res.status(200).json({ mensaje: 'Entrega eliminada con éxito' });
   });
 };

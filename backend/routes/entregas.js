@@ -18,7 +18,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Rutas
-router.post('/', upload.array('archivos', 5), entregasController.entregarTarea);
+router.post('/', upload.array('archivos', 10), entregasController.entregarTarea);
+router.put('/confirmar', entregasController.confirmarEntrega); 
+router.put('/revertir', entregasController.revertirEntrega);
 router.get('/alumno/:id/entregas', entregasController.getEntregasPorAlumno);
 router.delete('/:id', entregasController.eliminarEntrega);
 router.put('/:id', entregasController.calificarEntrega);

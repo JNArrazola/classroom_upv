@@ -29,13 +29,11 @@ const TareaDetalleAlumno = () => {
     fetchTareaYEntregas();
   }, [idTarea, usuario.id]);
 
-  const entregar = async () => {
-    if (!archivosSeleccionados.length) return alert('Debes seleccionar al menos un archivo');
-
+  const subirArchivos = async (files) => {
     const formData = new FormData();
     formData.append('id_tarea', idTarea);
     formData.append('id_alumno', usuario.id);
-    archivosSeleccionados.forEach((file) => formData.append('archivos', file));
+    files.forEach((file) => formData.append('archivos', file));
 
     try {
       await axios.post('http://localhost:3001/api/entregas', formData, {
@@ -43,39 +41,69 @@ const TareaDetalleAlumno = () => {
           'Content-Type': 'multipart/form-data'
         }
       });
-      alert('Tarea entregada correctamente');
-      setArchivosSeleccionados([]);
       const resEntregas = await axios.get(`http://localhost:3001/api/entregas/alumno/${usuario.id}/entregas`);
       const nuevas = resEntregas.data.filter(e => e.id_tarea === parseInt(idTarea));
       setEntregas(nuevas);
     } catch (err) {
-      console.error('Error al entregar tarea:', err);
-      alert('No se pudo entregar la tarea');
+      console.error('Error al subir archivos:', err);
+      alert('No se pudo subir el archivo');
+    }
+  };
+
+  const confirmarEntrega = async () => {
+    try {
+      await axios.put('http://localhost:3001/api/entregas/confirmar', {
+        id_tarea: idTarea,
+        id_alumno: usuario.id
+      });
+      const resEntregas = await axios.get(`http://localhost:3001/api/entregas/alumno/${usuario.id}/entregas`);
+      const actualizadas = resEntregas.data.filter(e => e.id_tarea === parseInt(idTarea));
+      setEntregas(actualizadas);
+    } catch (err) {
+      console.error('Error al confirmar entrega:', err);
+      alert('No se pudo confirmar la entrega');
     }
   };
 
   const deshacerEntrega = async () => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar tu entrega?')) return;
+    if (!window.confirm('¿Estás seguro de que quieres deshacer tu entrega?')) return;
 
     try {
-      for (const entrega of entregas) {
-        await axios.delete(`http://localhost:3001/api/entregas/${entrega.id}`);
-      }
-      setEntregas([]);
-      alert('Entrega eliminada');
+      await axios.put('http://localhost:3001/api/entregas/revertir', {
+        id_tarea: idTarea,
+        id_alumno: usuario.id
+      });
+      const resEntregas = await axios.get(`http://localhost:3001/api/entregas/alumno/${usuario.id}/entregas`);
+      const revertidas = resEntregas.data.filter(e => e.id_tarea === parseInt(idTarea));
+      setEntregas(revertidas);
     } catch (err) {
-      console.error('Error al eliminar entrega:', err);
-      alert('No se pudo eliminar la entrega');
+      console.error('Error al deshacer entrega:', err);
+      alert('No se pudo deshacer la entrega');
+    }
+  };
+
+  const eliminarArchivo = async (idEntrega) => {
+    try {
+      await axios.delete(`http://localhost:3001/api/entregas/${idEntrega}`);
+      const resEntregas = await axios.get(`http://localhost:3001/api/entregas/alumno/${usuario.id}/entregas`);
+      const actualizadas = resEntregas.data.filter(e => e.id_tarea === parseInt(idTarea));
+      setEntregas(actualizadas);
+    } catch (err) {
+      console.error('Error al eliminar archivo:', err);
+      alert('No se pudo eliminar el archivo');
     }
   };
 
   if (!tarea) return <p>Cargando tarea...</p>;
 
   const fechaEntrega = tarea.fecha_entrega ? new Date(tarea.fecha_entrega) : null;
-  const entregadoTarde =
-    entregas.length &&
-    fechaEntrega &&
-    new Date(entregas[0].fecha_entrega) > fechaEntrega;
+  const entregadoTarde = entregas.length && fechaEntrega && new Date(entregas[0].fecha_entrega) > fechaEntrega;
+  const calificacion = entregas.length ? entregas[0].calificacion : null;
+  const fueEntregada = entregas.some(e => e.entregado);
+
+  let estadoEntrega = 'Sin entregar';
+  if (fueEntregada) estadoEntrega = 'Entregado con éxito';
+  else if (entregas.length) estadoEntrega = 'Borrador guardado';
 
   return (
     <div className="detalle-tarea-alumno">
@@ -111,11 +139,11 @@ const TareaDetalleAlumno = () => {
       <hr />
 
       <h4>Tu trabajo</h4>
-
-      {entregas.length > 0 ? (
+      <p><strong>Estado:</strong> {estadoEntrega}</p>
+      {entregas.length > 0 && (
         <>
-          <p><strong>Entregado el:</strong> {new Date(entregas[0].fecha_entrega).toLocaleString()} {entregadoTarde && <span style={{ color: 'orange' }}>(tarde)</span>}</p>
-          <p><strong>Calificación:</strong> {entregas[0].calificacion ?? 'Pendiente'}</p>
+          <p><strong>Última modificación:</strong> {new Date(entregas[0].fecha_entrega).toLocaleString()} {entregadoTarde && <span style={{ color: 'orange' }}>(tarde)</span>}</p>
+          <p><strong>Calificación:</strong> {calificacion ?? 'Pendiente'}</p>
 
           <div className="adjuntos-grid">
             {entregas.map((entrega, i) => {
@@ -132,25 +160,29 @@ const TareaDetalleAlumno = () => {
                     <p>Archivo {i + 1}</p>
                   )}
                   <a href={url} target="_blank" rel="noreferrer">Ver archivo</a>
+                  {!entrega.entregado && (
+                    <button className="btn-eliminar" onClick={() => eliminarArchivo(entrega.id)}>🗑️</button>
+                  )}
                 </div>
               );
             })}
           </div>
-
-          <br />
-          <button onClick={deshacerEntrega}>❌ Deshacer entrega</button>
         </>
-      ) : (
-        <div>
-          <input
-            type="file"
-            multiple
-            onChange={(e) => setArchivosSeleccionados(Array.from(e.target.files))}
-            accept=".pdf,image/*"
-          />
-          <button onClick={entregar} disabled={archivosSeleccionados.length === 0}>📤 Entregar</button>
-        </div>
       )}
+
+      <div className="subida-tarea">
+        <input
+          type="file"
+          multiple
+          onChange={(e) => subirArchivos(Array.from(e.target.files))}
+          accept=".pdf,image/*"
+        />
+        {!fueEntregada ? (
+          <button onClick={confirmarEntrega} disabled={entregas.length === 0}>📤 Entregar tarea</button>
+        ) : (
+          <button onClick={deshacerEntrega}>❌ Deshacer entrega</button>
+        )}
+      </div>
     </div>
   );
 };
