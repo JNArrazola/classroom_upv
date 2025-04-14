@@ -1,4 +1,3 @@
-// src/pages/TareaDetalleAlumno.jsx
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -10,32 +9,33 @@ const TareaDetalleAlumno = () => {
   const { usuario } = useAuth();
   const navigate = useNavigate();
   const [tarea, setTarea] = useState(null);
-  const [entrega, setEntrega] = useState(null);
-  const [archivo, setArchivo] = useState(null);
+  const [entregas, setEntregas] = useState([]);
+  const [archivosSeleccionados, setArchivosSeleccionados] = useState([]);
 
   useEffect(() => {
-    const fetchTareaYEntrega = async () => {
+    const fetchTareaYEntregas = async () => {
       try {
         const resTarea = await axios.get(`http://localhost:3001/api/avisos/${idTarea}`);
         setTarea(resTarea.data);
 
-        const resEntrega = await axios.get(`http://localhost:3001/api/entregas/alumno/${usuario.id}/entregas`);
-        const entregaEncontrada = resEntrega.data.find(e => e.id_tarea === parseInt(idTarea));
-        setEntrega(entregaEncontrada || null);
+        const resEntregas = await axios.get(`http://localhost:3001/api/entregas/alumno/${usuario.id}/entregas`);
+        const entregasFiltradas = resEntregas.data.filter(e => e.id_tarea === parseInt(idTarea));
+        setEntregas(entregasFiltradas);
       } catch (err) {
-        console.error('Error al cargar tarea o entrega:', err);
+        console.error('Error al cargar tarea o entregas:', err);
       }
     };
 
-    fetchTareaYEntrega();
+    fetchTareaYEntregas();
   }, [idTarea, usuario.id]);
 
   const entregar = async () => {
-    if (!archivo) return alert('Debes seleccionar un archivo');
+    if (!archivosSeleccionados.length) return alert('Debes seleccionar al menos un archivo');
+
     const formData = new FormData();
     formData.append('id_tarea', idTarea);
     formData.append('id_alumno', usuario.id);
-    formData.append('archivos', archivo);
+    archivosSeleccionados.forEach((file) => formData.append('archivos', file));
 
     try {
       await axios.post('http://localhost:3001/api/entregas', formData, {
@@ -44,10 +44,10 @@ const TareaDetalleAlumno = () => {
         }
       });
       alert('Tarea entregada correctamente');
-      setArchivo(null);
-      const resEntrega = await axios.get(`http://localhost:3001/api/entregas/alumno/${usuario.id}/entregas`);
-      const nuevaEntrega = resEntrega.data.find(e => e.id_tarea === parseInt(idTarea));
-      setEntrega(nuevaEntrega);
+      setArchivosSeleccionados([]);
+      const resEntregas = await axios.get(`http://localhost:3001/api/entregas/alumno/${usuario.id}/entregas`);
+      const nuevas = resEntregas.data.filter(e => e.id_tarea === parseInt(idTarea));
+      setEntregas(nuevas);
     } catch (err) {
       console.error('Error al entregar tarea:', err);
       alert('No se pudo entregar la tarea');
@@ -56,9 +56,12 @@ const TareaDetalleAlumno = () => {
 
   const deshacerEntrega = async () => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar tu entrega?')) return;
+
     try {
-      await axios.delete(`http://localhost:3001/api/entregas/${entrega.id}`);
-      setEntrega(null);
+      for (const entrega of entregas) {
+        await axios.delete(`http://localhost:3001/api/entregas/${entrega.id}`);
+      }
+      setEntregas([]);
       alert('Entrega eliminada');
     } catch (err) {
       console.error('Error al eliminar entrega:', err);
@@ -69,12 +72,16 @@ const TareaDetalleAlumno = () => {
   if (!tarea) return <p>Cargando tarea...</p>;
 
   const fechaEntrega = tarea.fecha_entrega ? new Date(tarea.fecha_entrega) : null;
-  const entregadoTarde = entrega?.fecha_entrega && fechaEntrega && new Date(entrega.fecha_entrega) > fechaEntrega;
+  const entregadoTarde =
+    entregas.length &&
+    fechaEntrega &&
+    new Date(entregas[0].fecha_entrega) > fechaEntrega;
 
   return (
     <div className="detalle-tarea-alumno">
       <button onClick={() => navigate(-1)}>← Volver</button>
       <h2>📝 {tarea.texto}</h2>
+
       {fechaEntrega && (
         <p><strong>Fecha de entrega:</strong> {fechaEntrega.toLocaleDateString()}</p>
       )}
@@ -104,22 +111,44 @@ const TareaDetalleAlumno = () => {
       <hr />
 
       <h4>Tu trabajo</h4>
-      {entrega ? (
-        <div>
-          <p><strong>Entregado el:</strong> {new Date(entrega.fecha_entrega).toLocaleString()} {entregadoTarde && <span style={{ color: 'orange' }}>(tarde)</span>}</p>
-          <p><strong>Calificación:</strong> {entrega.calificacion ?? 'Pendiente'}</p>
-          <a href={`http://localhost:3001/storage/${entrega.archivo}`} target="_blank" rel="noreferrer">Ver tu archivo</a>
+
+      {entregas.length > 0 ? (
+        <>
+          <p><strong>Entregado el:</strong> {new Date(entregas[0].fecha_entrega).toLocaleString()} {entregadoTarde && <span style={{ color: 'orange' }}>(tarde)</span>}</p>
+          <p><strong>Calificación:</strong> {entregas[0].calificacion ?? 'Pendiente'}</p>
+
+          <div className="adjuntos-grid">
+            {entregas.map((entrega, i) => {
+              const url = `http://localhost:3001/storage/${entrega.archivo}`;
+              const isImage = entrega.archivo.match(/\.(jpg|jpeg|png|gif)$/i);
+              const isPDF = entrega.archivo.match(/\.pdf$/i);
+              return (
+                <div key={i} className="adjunto-card">
+                  {isImage ? (
+                    <img src={url} className="imagen-miniatura" alt={`Entrega ${i}`} />
+                  ) : isPDF ? (
+                    <iframe src={`${url}#toolbar=0`} className="pdf-miniatura" title={`Entrega ${i}`}></iframe>
+                  ) : (
+                    <p>Archivo {i + 1}</p>
+                  )}
+                  <a href={url} target="_blank" rel="noreferrer">Ver archivo</a>
+                </div>
+              );
+            })}
+          </div>
+
           <br />
           <button onClick={deshacerEntrega}>❌ Deshacer entrega</button>
-        </div>
+        </>
       ) : (
         <div>
           <input
             type="file"
-            onChange={(e) => setArchivo(e.target.files[0])}
+            multiple
+            onChange={(e) => setArchivosSeleccionados(Array.from(e.target.files))}
             accept=".pdf,image/*"
           />
-          <button onClick={entregar} disabled={!archivo}>📤 Entregar</button>
+          <button onClick={entregar} disabled={archivosSeleccionados.length === 0}>📤 Entregar</button>
         </div>
       )}
     </div>

@@ -229,8 +229,7 @@ const ClaseDetalleAlumno = () => {
                             {entrega.calificacion ?? "Pendiente"}
                           </p>
                           <a
-                            href={`http://localhost:3001/storage/${entrega.archivo}`}
-                            target="_blank"
+                            href={`/alumno/clase/${id}/tarea/${aviso.id}`}
                             rel="noreferrer"
                           >
                             Ver tu entrega
@@ -240,6 +239,7 @@ const ClaseDetalleAlumno = () => {
                         <>
                           <input
                             type="file"
+                            multiple
                             onChange={(e) =>
                               setArchivosEntrega({
                                 ...archivosEntrega,
