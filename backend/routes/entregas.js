@@ -24,5 +24,6 @@ router.put('/revertir', entregasController.revertirEntrega);
 router.get('/alumno/:id/entregas', entregasController.getEntregasPorAlumno);
 router.delete('/:id', entregasController.eliminarEntrega);
 router.put('/:id', entregasController.calificarEntrega);
+router.get('/entregado/:id_tarea/:id_alumno', entregasController.getEntregadoPorAlumno);
 
 module.exports = router;

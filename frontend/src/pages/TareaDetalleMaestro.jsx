@@ -10,6 +10,7 @@ const TareaDetalleMaestro = () => {
   const [tarea, setTarea] = useState(null);
   const [entregas, setEntregas] = useState([]);
   const [calificacionesTemp, setCalificacionesTemp] = useState({});
+  const [modalArchivos, setModalArchivos] = useState({ visible: false, archivos: [] });
 
   useEffect(() => {
     const fetchTarea = async () => {
@@ -26,11 +27,56 @@ const TareaDetalleMaestro = () => {
         const res = await axios.get(`http://localhost:3001/api/tareas/${idTarea}/entregas`, {
           headers: { Authorization: `Bearer ${usuario.token}` }
         });
-        setEntregas(res.data);
+    
+        const mapa = new Map();
+    
+        // Agrupamos entregas por alumno
+        for (const e of res.data) {
+          if (!mapa.has(e.id_alumno)) {
+            mapa.set(e.id_alumno, {
+              id_alumno: e.id_alumno,
+              nombre_alumno: e.nombre_alumno,
+              archivos: [],
+              entregado: false, // se actualizará abajo
+              fecha_entrega: null,
+              calificacion: null,
+              id_entrega: e.id_entrega
+            });
+          }
+    
+          const alumno = mapa.get(e.id_alumno);
+          alumno.archivos.push(e.archivo);
+    
+          if (!alumno.fecha_entrega || new Date(e.fecha_entrega) > new Date(alumno.fecha_entrega)) {
+            alumno.fecha_entrega = e.fecha_entrega;
+          }
+    
+          if (e.calificacion !== null && e.calificacion !== undefined) {
+            alumno.calificacion = e.calificacion;
+          }
+    
+          alumno.id_entrega = e.id_entrega;
+        }
+    
+        const alumnosActualizados = Array.from(mapa.values());
+    
+        await Promise.all(alumnosActualizados.map(async (alumno) => {
+          try {
+            const r = await axios.get(`http://localhost:3001/api/entregas/entregado/${idTarea}/${alumno.id_alumno}`);
+            alumno.entregado = Number(r.data.entregado) === 1;
+            console.log(`✅ [${alumno.nombre_alumno}] entregado = ${alumno.entregado}`);
+          } catch (err) {
+            console.warn(`⚠️ No se pudo obtener entregado para ${alumno.nombre_alumno}`);
+            alumno.entregado = false;
+          }
+        }));
+    
+        setEntregas(alumnosActualizados);
       } catch (err) {
         console.error('Error al cargar entregas:', err);
       }
     };
+    
 
     fetchTarea();
     fetchEntregas();
@@ -44,9 +90,11 @@ const TareaDetalleMaestro = () => {
     }
     try {
       await axios.put(`http://localhost:3001/api/entregas/${entregaId}`, { calificacion: cal });
-      setEntregas(prev => prev.map(ent =>
-        ent.id_entrega === entregaId ? { ...ent, calificacion: cal } : ent
-      ));
+      setEntregas(prev =>
+        prev.map(ent =>
+          ent.id_entrega === entregaId ? { ...ent, calificacion: cal } : ent
+        )
+      );
       setCalificacionesTemp(prev => {
         const updated = { ...prev };
         delete updated[entregaId];
@@ -58,19 +106,17 @@ const TareaDetalleMaestro = () => {
     }
   };
 
-  if (!tarea) return <p>Cargando tarea...</p>;
-
-  const puntajeMaximo = tarea.puntaje_maximo || 100;
+  const puntajeMaximo = tarea?.puntaje_maximo || 100;
 
   return (
     <div className="tarea-detalle">
-      <h2>📝 {tarea.texto}</h2>
-      <p><strong>Fecha de publicación:</strong> {new Date(tarea.fecha).toLocaleString()}</p>
-      {tarea.fecha_entrega && (
+      <h2>📝 {tarea?.texto}</h2>
+      <p><strong>Fecha de publicación:</strong> {new Date(tarea?.fecha).toLocaleString()}</p>
+      {tarea?.fecha_entrega && (
         <p><strong>Fecha de entrega:</strong> {new Date(tarea.fecha_entrega).toLocaleDateString()}</p>
       )}
 
-      {tarea.archivos?.length > 0 && (
+      {tarea?.archivos?.length > 0 && (
         <div className="adjuntos-grid">
           {tarea.archivos.map((archivo, index) => {
             const isImage = archivo.match(/\.(jpg|jpeg|png|gif)$/i);
@@ -99,24 +145,23 @@ const TareaDetalleMaestro = () => {
           <thead>
             <tr>
               <th>Alumno</th>
-              <th>Archivo</th>
+              <th>Archivos</th>
               <th>Fecha de entrega</th>
               <th>Estatus</th>
               <th>Calificación</th>
             </tr>
           </thead>
           <tbody>
-            {entregas.map(entrega => {
+            {entregas.map((entrega, index) => {
               const fechaEntrega = entrega.fecha_entrega ? new Date(entrega.fecha_entrega) : null;
-              const fechaLimite = tarea.fecha_entrega ? new Date(tarea.fecha_entrega) : null;
-              const hoy = new Date();
+              const fechaLimite = tarea?.fecha_entrega ? new Date(tarea.fecha_entrega) : null;
 
               let estatus = '';
               let estatusColor = '';
 
-              if (!fechaEntrega && fechaLimite && hoy > fechaLimite) {
-                estatus = 'Sin entregar';
-                estatusColor = 'red';
+              if (!entrega.entregado) {
+                estatus = 'Borrador';
+                estatusColor = 'gray';
               } else if (fechaEntrega && fechaLimite && fechaEntrega > fechaLimite) {
                 estatus = 'Entregado tarde';
                 estatusColor = 'orange';
@@ -131,21 +176,24 @@ const TareaDetalleMaestro = () => {
               const calTemp = calificacionesTemp[entrega.id_entrega];
 
               return (
-                <tr key={entrega.id_entrega || entrega.id_alumno}>
+                <tr key={`${entrega.id_alumno}-${index}`}>
                   <td>{entrega.nombre_alumno}</td>
                   <td>
-                    {fechaEntrega ? (
-                      <a href={`http://localhost:3001/storage/${entrega.archivo}`} target="_blank" rel="noreferrer">
-                        Ver archivo
-                      </a>
-                    ) : (
-                      '—'
-                    )}
+                    <button
+                      onClick={() =>
+                        setModalArchivos({
+                          visible: true,
+                          archivos: entrega.archivos || []
+                        })
+                      }
+                    >
+                      Ver archivos ({entrega.archivos.length})
+                    </button>
                   </td>
                   <td>{fechaEntrega ? fechaEntrega.toLocaleString() : '—'}</td>
                   <td style={{ color: estatusColor, fontWeight: 'bold' }}>{estatus}</td>
                   <td>
-                    {fechaEntrega ? (
+                    {entrega.entregado ? (
                       <>
                         <input
                           type="number"
@@ -186,6 +234,24 @@ const TareaDetalleMaestro = () => {
             })}
           </tbody>
         </table>
+      )}
+
+      {modalArchivos.visible && (
+        <div className="modal">
+          <div className="modal-contenido">
+            <h4>Archivos entregados</h4>
+            <ul className="archivo-lista">
+              {modalArchivos.archivos.map((archivo, idx) => (
+                <li key={idx}>
+                  <a href={`http://localhost:3001/storage/${archivo}`} target="_blank" rel="noreferrer">
+                    {archivo}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <button onClick={() => setModalArchivos({ visible: false, archivos: [] })}>Cerrar</button>
+          </div>
+        </div>
       )}
     </div>
   );
